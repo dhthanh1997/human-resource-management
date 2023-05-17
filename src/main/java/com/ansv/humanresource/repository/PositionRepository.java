@@ -1,5 +1,6 @@
 package com.ansv.humanresource.repository;
 
+import com.ansv.humanresource.model.Position;
 import com.ansv.humanresource.model.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -13,13 +14,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserEntityRepository extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity>, UserEntityRepositoryCustom {
+public interface PositionRepository extends JpaRepository<Position, Long>, JpaSpecificationExecutor<Position>, PositionRepositoryCustom {
 
     @Transactional
     @Modifying
-    @Query(value = "DELETE FROM user_entity WHERE id IN :listId", nativeQuery = true)
+    @Query(value = "DELETE FROM position WHERE id IN :listId", nativeQuery = true)
     Integer deleteByListId(@Param("listId") List<Long> listId);
 
-    UserEntity findByUsername(String username);
+    Optional<Position> findByCode(String code);
 
 }

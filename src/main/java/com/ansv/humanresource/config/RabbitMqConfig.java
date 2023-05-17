@@ -2,6 +2,7 @@ package com.ansv.humanresource.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -49,6 +50,14 @@ public class RabbitMqConfig {
         return rabbitTemplate;
     }
 
+//    @Bean
+//    public AsyncRabbitTemplate asyncRabbitTemplate(RabbitTemplate rabbitTemplate){
+//        rabbitTemplate = new RabbitTemplate(connectionFactory());
+//        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+//        return new AsyncRabbitTemplate(rabbitTemplate);
+//    }
+
+
     @Bean(name = "rabbitListenerContainerFactory")
     public SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory() {
        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
@@ -73,15 +82,17 @@ public class RabbitMqConfig {
 
 
     // sender
-    @Bean
-    public Queue queue() {
-        return new Queue(environment.getProperty("spring.rabbitmq.queue"));
-    }
 
     @Bean
     public DirectExchange directExchange() {
         return new DirectExchange(environment.getProperty("spring.rabbitmq.exchange"));
     }
+
+    @Bean
+    public Queue queue() {
+        return new Queue(environment.getProperty("spring.rabbitmq.queue"));
+    }
+
 
     @Bean
     public Binding binding() {
@@ -91,10 +102,6 @@ public class RabbitMqConfig {
 
 
     // receiver
-    @Bean
-    public Queue queueReceived() {
-        return new Queue(environment.getProperty("spring.rabbitmq.queue-received"));
-    }
 
     @Bean
     public DirectExchange directExchangeReceived() {
@@ -102,8 +109,13 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Binding bindingReceived() {
-        return BindingBuilder.bind(queueReceived()).to(directExchangeReceived()).with(environment.getProperty("spring.rabbitmq.routingkey-received"));
+    public Queue queueReceivedHuman() {
+        return new Queue(environment.getProperty("spring.rabbitmq.queue-human"));
+    }
+
+    @Bean
+    public Binding bindingReceivedHuman() {
+        return BindingBuilder.bind(queueReceivedHuman()).to(directExchangeReceived()).with(environment.getProperty("spring.rabbitmq.routingkey-human"));
     }
     // receiver
 

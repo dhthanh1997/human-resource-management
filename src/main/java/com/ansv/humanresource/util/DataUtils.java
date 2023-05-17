@@ -6,11 +6,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Sort;
+import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
+import java.util.*;
 
 @Slf4j
 public class DataUtils {
@@ -26,6 +33,7 @@ public class DataUtils {
         return !isNull(obj);
     }
 
+
     public static boolean nullOrEmpty(String input) {
         return input == null || input.trim().isEmpty();
     }
@@ -33,6 +41,7 @@ public class DataUtils {
     public static boolean nullOrEmpty(Collection objects) {
         return objects == null || objects.isEmpty();
     }
+
 
     public static boolean isNullOrEmpty(Collection<?> collection) {
         return collection == null || collection.isEmpty();
@@ -56,7 +65,7 @@ public class DataUtils {
 
 
     public static String parseToString(Object obj) {
-        if(isNull(obj)) {
+        if (isNull(obj)) {
             return null;
         }
         return String.valueOf(obj);
@@ -68,7 +77,7 @@ public class DataUtils {
 
     public static Integer parseToInt(Object obj, Integer value) {
         String tmp = parseToString(obj);
-        if(isNull(tmp)) {
+        if (isNull(tmp)) {
             return null;
         }
         return Integer.valueOf(tmp);
@@ -162,7 +171,8 @@ public class DataUtils {
             LocalDateTime rtn = convertStringToLocalDateTime(tmp, "yyyy-MM-dd HH:mm:ss");
             return rtn;
         } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+//            log.error(ex.getMessage(), ex);
+            System.out.println(ex.getMessage());
         }
         return null;
     }
@@ -194,7 +204,8 @@ public class DataUtils {
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             return mapper.writeValueAsString(data);
         } catch (Exception ex) {
-            log.warn(ex.getMessage(), ex);
+//            log.warn(ex.getMessage(), ex);
+            System.out.println(ex.getMessage());
             return "";
         }
     }
@@ -208,7 +219,8 @@ public class DataUtils {
             Gson gson = new Gson();
             return gson.fromJson(jsonData, classOutput);
         } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+//            log.error(ex.getMessage(), ex);
+            System.out.println(ex.getMessage());
         }
         return null;
     }
@@ -271,6 +283,14 @@ public class DataUtils {
         return String.format("84%s", isdn);
     }
 
+    public static boolean safeEqual(Object obj1, Object obj2) {
+        return ((obj1 != null) && (obj2 != null) && obj2.toString().equals(obj1.toString()));
+    }
+
+    public static boolean safeEqualIgnoreCase(Object obj1, Object obj2) {
+        return ((obj1 != null) && (obj2 != null) && obj2.toString().equalsIgnoreCase(obj1.toString()));
+    }
+
     public static boolean isInteger(Object obj) {
         return obj == parseToInteger(obj);
     }
@@ -281,6 +301,38 @@ public class DataUtils {
             randomNumber = randomNumber.replaceFirst("0", "9");
         }
         return randomNumber;
+    }
+
+    // template\import\File_mau_import_template.xlsx
+    public static InputStream readInputStreamResource(String path) throws IOException {
+        ClassPathResource classPathResource = new ClassPathResource(path);
+        return classPathResource.getInputStream();
+    }
+
+    public static byte[] readFileResource(String path) throws IOException {
+        ClassPathResource classPathResource = new ClassPathResource(path);
+        return classPathResource.getInputStream().readAllBytes();
+
+        // return
+        // DataUtils.class.getClassLoader().getResourceAsStream(path).readAllBytes();
+    }
+
+    public static <T> T base64ToObject(String encodedString, Class<T> classOutput)
+            throws IOException {
+        byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
+        String decodedString = new String(decodedBytes, StandardCharsets.UTF_8.name());
+
+        return jsonToObject(decodedString, classOutput);
+    }
+
+    public static <T> T byteToObject(byte[] input, Class<T> classOutput) {
+        String jsonData = new String(input, StandardCharsets.UTF_8);
+        try {
+            return DataUtils.jsonToObject(jsonData, classOutput);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+        return null;
     }
 
 
@@ -303,5 +355,125 @@ public class DataUtils {
         return str;
     }
 
+    public static Object convertToDataType(Class<?> target, String s) {
+        if (target == Object.class || target == String.class || s == null) {
+            return s;
+        }
+        if (target == Character.class || target == char.class) {
+            return s.charAt(0);
+        }
+        if (target == Byte.class || target == byte.class) {
+            return Byte.parseByte(s);
+        }
+        if (target == Short.class || target == short.class) {
+            return Short.parseShort(s);
+        }
+        if (target == Integer.class || target == int.class) {
+            return Integer.parseInt(s);
+        }
+        if (target == Long.class || target == long.class) {
+            return Long.parseLong(s);
+        }
+        if (target == Float.class || target == float.class) {
+            return Float.parseFloat(s);
+        }
+        if (target == Double.class || target == double.class) {
+            return Double.parseDouble(s);
+        }
+        if (target == Boolean.class || target == boolean.class) {
+            return Boolean.parseBoolean(s);
+        }
+        throw new IllegalArgumentException("Don't know how to convert to " + target);
+    }
+
+    public static Object instantiate(List<String> args, String className) throws Exception {
+        // Load the class.
+        Class<?> clazz = Class.forName(className);
+        // Search for an "appropriate" constructor.
+        for (Constructor<?> ctor : clazz.getConstructors()) {
+            Class<?>[] paramTypes = ctor.getParameterTypes();
+
+            // If the arity matches, let's use it.
+            if (args.size() == paramTypes.length) {
+
+                // Convert the String arguments into the parameters' types.
+                Object[] convertedArgs = new Object[args.size()];
+                for (int i = 0; i < convertedArgs.length; i++) {
+                    convertedArgs[i] = convertToDataType(paramTypes[i], args.get(i));
+                }
+
+                // Instantiate the object with the converted arguments.
+                return ctor.newInstance(convertedArgs);
+            }
+        }
+
+        throw new IllegalArgumentException("Don't know how to instantiate " + className);
+    }
+
+    // sort utils
+    public static Sort sort(List<String> sort) {
+        if (CollectionUtils.isEmpty(sort)) {
+            return null;
+        }
+
+        List<Sort.Order> orderList = new ArrayList<>();
+        if (sort.get(0).contains("_")) {
+            String[] strArray;
+            for (String str : sort) {
+                strArray = str.split("_");
+                if (strArray.length > 1) {
+                    if ("asc".equalsIgnoreCase(strArray[1])) {
+                        orderList.add(Sort.Order.asc(camelToSnake(strArray[0])));
+                    } else {
+                        orderList.add(Sort.Order.desc(camelToSnake(strArray[0])));
+                    }
+                } else {
+                    orderList.add(Sort.Order.asc(camelToSnake(strArray[0])));
+                }
+            }
+        } else {
+            for (String s : sort) {
+                orderList.add(Sort.Order.asc(camelToSnake(s)));
+            }
+        }
+        return Sort.by(orderList);
+    }
+
+    public static List<String> getSortParam(String sort) {
+        if (DataUtils.isNullOrEmpty(sort)) {
+            return new ArrayList<>();
+        }
+        return Arrays.asList(sort.split(";"));
+    }
+
+//    end sort utils
+
+    public static boolean isCollection(Object object) {
+        return object instanceof Collection || object instanceof Map;
+    }
+
+
+    /*
+    originalList : list ban đầu
+    targetList: list cấp 1
+    property: array
+     */
+    public static List<TreeComponent> recursiveObjectList(List<TreeComponent> originalList, List<TreeComponent> targetList) {
+
+        for (TreeComponent item : targetList) {
+            item.setChildren(new ArrayList<>());
+            for (TreeComponent sub : originalList) {
+                String parentCode = sub.getParentCode();
+//                if (!DataUtils.isNullOrEmpty(parentCode)) {
+                    if (item.getCode().equals(parentCode)) {
+                        item.getChildren().add(sub);
+//                    }
+                }
+
+            }
+            recursiveObjectList(originalList, item.getChildren());
+        }
+        return targetList;
+    }
 
 }

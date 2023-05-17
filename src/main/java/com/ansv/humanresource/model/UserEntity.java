@@ -8,6 +8,8 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -22,10 +24,10 @@ public class UserEntity extends Auditable<String> implements Serializable {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "username", columnDefinition = "nvarchar(500)")
+    @Column(name = "username", columnDefinition = "varchar(500)")
     private String username;
 
-    @Column(name = "email", columnDefinition = "nvarchar(500)")
+    @Column(name = "email", columnDefinition = "varchar(500)")
     private String email;
 
     @Column(name = "phone", columnDefinition = "varchar(20)")
@@ -34,10 +36,26 @@ public class UserEntity extends Auditable<String> implements Serializable {
     @Column(name = "fullname", columnDefinition = "nvarchar(500)")
     private String fullname;
 
-    @Column(name = "department_id")
-    private Long departmentId;
 
-    @Column(name = "position_id")
-    private Long positionId;
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinTable(name = "user_department", joinColumns = {
+            @JoinColumn(name = "user_id", referencedColumnName = "id")
+    },
+            inverseJoinColumns = {
+                    @JoinColumn(name = "department_id", referencedColumnName = "id")
+            }
+    )
+    private Set<Department> departments = new HashSet<>();
+
+    @ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinTable(name = "user_position", joinColumns = {
+            @JoinColumn(name = "user_id", referencedColumnName = "id")
+    },
+            inverseJoinColumns = {
+            @JoinColumn(name = "position_id", referencedColumnName = "id")
+            }
+    )
+    private Set<Position> positions = new HashSet<>();
+
 
 }
