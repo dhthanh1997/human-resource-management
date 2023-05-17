@@ -11,9 +11,9 @@ COPY src /app/src
 WORKDIR /app/
 # run mvn
 # update db with liquibase
-RUN mvn clean compile -P dev
+RUN mvn clean compile -P dev-microservice
 RUN mvn liquibase:update
-RUN mvn clean install -P dev
+RUN mvn clean install -P dev-microservice
 
 
 ### STAGE 2: DEPLOY APPLICATION
