@@ -18,7 +18,7 @@ RUN mvn clean install -P dev-microservice
 
 ### STAGE 2: DEPLOY APPLICATION
 FROM openjdk:11.0.14-jdk
-WORKDIR /app
+WORKDIR /app/
 COPY --from=builders /app/target/human-resourece-management-0.0.1.jar /app/
 ENTRYPOINT ["java","-jar", "human-resourece-management-0.0.1.jar"]
 
