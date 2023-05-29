@@ -20,7 +20,6 @@ public class RabbitMqSender {
     private String routingkey;
 
     public void sender(UserDTO user) {
-
         rabbitTemplate.convertAndSend(exchange, routingkey, user);
     }
 

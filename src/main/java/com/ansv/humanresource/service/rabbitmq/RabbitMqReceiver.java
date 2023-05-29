@@ -75,9 +75,8 @@ public class RabbitMqReceiver implements RabbitListenerConfigurer {
 //                user = new UserDTO();
                 item.setStatus("ACTIVE");
                 user = userService.save(item);
-                rabbitTemplate.convertAndSend(exchange, routingkey, user);
             }
-
+            rabbitTemplate.convertAndSend(exchange, routingkey, user);
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
         }
