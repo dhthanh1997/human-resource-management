@@ -11,9 +11,9 @@ COPY src /app/src
 WORKDIR /app/
 # run mvn
 # update db with liquibase
-RUN mvn clean compile -P dev-microservice
+RUN mvn clean compile -P prod
 RUN mvn liquibase:update
-RUN mvn clean install -P dev-microservice
+RUN mvn clean install -P prod
 
 
 ### STAGE 2: DEPLOY APPLICATION
@@ -21,5 +21,5 @@ FROM openjdk:11.0.14-jdk
 WORKDIR /app/
 COPY --from=builders /app/target/human-resourece-management-0.0.1.jar /app/
 ENTRYPOINT ["java","-jar", "human-resourece-management-0.0.1.jar"]
-
+EXPOSE 8099
 
