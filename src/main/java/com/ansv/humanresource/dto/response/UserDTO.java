@@ -33,4 +33,6 @@ public class UserDTO extends BaseDTO<String> {
 
     private String password;
 
+    private String typeRequest;
+
 }

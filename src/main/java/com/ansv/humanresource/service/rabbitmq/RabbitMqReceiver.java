@@ -1,5 +1,6 @@
 package com.ansv.humanresource.service.rabbitmq;
 
+import com.ansv.humanresource.constants.TypeRequestEnum;
 import com.ansv.humanresource.dto.mapper.BaseMapper;
 import com.ansv.humanresource.dto.response.UserDTO;
 import com.ansv.humanresource.model.UserEntity;
@@ -50,33 +51,42 @@ public class RabbitMqReceiver implements RabbitListenerConfigurer {
     private String routingkey;
 
 
-
     public UserDTO userDTO = new UserDTO();
 
     public String username = "";
 
     @RabbitListener(queues = "${spring.rabbitmq.queue}")
-    public void receivedMessage(UserDTO user){
+    public void receivedMessage(UserDTO user) {
         logger.info("User Details Received is.. " + user.getUsername());
         userDTO = user;
     }
 
     @RabbitListener(queues = "${spring.rabbitmq.queue-human}")
     public void receivedMessageFromGateway(UserDTO item) {
-        UserDTO user = userService.findByUsername(item);
         try {
-            if (!DataUtils.isNullOrEmpty(user)) {
-                if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-                    throw new UsernameNotFoundException("User not found with username: ");
-                }
-            } else {
-                //            creating if user isn't exist in db
+            UserDTO user = new UserDTO();
+            if (item.getTypeRequest().equals(TypeRequestEnum.INSERT.getName())) {
+                // creating if user isn't exist in db
                 log.warn("User not found with username ----> create in db", item.getUsername());
-//                user = new UserDTO();
                 item.setStatus("ACTIVE");
                 user = userService.save(item);
+                rabbitTemplate.convertAndSend(exchange, routingkey, user);
             }
-            rabbitTemplate.convertAndSend(exchange, routingkey, user);
+            if (item.getTypeRequest().equals(TypeRequestEnum.VIEW.getName())) {
+                // creating if user isn't exist in db
+                user = userService.findByUsername(item);
+                if (!DataUtils.isNullOrEmpty(user)) {
+                    if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                        throw new UsernameNotFoundException("User not found with username: ");
+                    }
+                    rabbitTemplate.convertAndSend(exchange, routingkey, user);
+                }
+//                else {
+//
+//                }
+            }
+
+
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
         }

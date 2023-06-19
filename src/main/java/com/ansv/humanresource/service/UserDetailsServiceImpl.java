@@ -50,9 +50,9 @@ public class UserDetailsServiceImpl implements CustomUserDetailService {
             }
             user.setStatus("ACTIVE");
             userRepository.save(user);
-//            UserDTO userDTO = new UserDTO();
-//            userDTO = UserMapper.INSTANCE.modelToDTO(user);
-//            rabbitMqSender.sender(userDTO);
+            UserDTO userDTO = new UserDTO();
+            userDTO = UserMapper.INSTANCE.modelToDTO(user);
+            rabbitMqSender.sender(userDTO);
             newUser = new User(user.getUsername(), user.getEmail(), buildSimpleGrantedAuthorities("user"));
 
             return newUser;
